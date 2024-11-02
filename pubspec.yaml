@@ -30,11 +30,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  http: ^0.13.4
 
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  carousel_slider: ^5.0.0
 
 dev_dependencies:
   flutter_test:
@@ -52,6 +54,17 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  assets:
+  - assets/images/Division.jpg
+  - assets/images/Multiplicacion.jpg
+  - assets/images/Suma.jpg
+  - assets/images/Resta.jpg
+  - assets/images/caballo.jpg
+  - assets/images/manzana.jpg
+  - assets/images/Login.png
+  - assets/images/Home2.png
+  - assets/images/logo.png
+
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
