@@ -3,26 +3,42 @@ import 'package:mathya/Screen_Grades/Grades_pages.dart';
 import 'package:mathya/Screen_Home/home.dart';
 import 'package:mathya/Screen_Login/Login.dart';
 import 'package:mathya/Screen_Operation/home_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class PageProfile extends StatelessWidget {
+class PageProfile extends StatefulWidget {
+  @override
+  _PageProfileState createState() => _PageProfileState();
+}
+
+class _PageProfileState extends State<PageProfile> {
+  String userName = ''; 
+
+  // Función para cargar el nombre de usuario desde SharedPreferences
+  _loadUserName() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userName = prefs.getString('nombreUsuario') ?? '';  // Si no existe, se asigna una cadena vacía
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();  // Llama a la función para cargar el nombre del usuario al iniciar el widget
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
-      // Menú desplegable 
       drawer: Drawer(
         backgroundColor: Color(0xFFFFF5DE),
         child: ListView(
           padding: EdgeInsets.zero,
           children: <Widget>[
-
-            // Encabezado del menú
             DrawerHeader(
               decoration: const BoxDecoration(
                 color: Color(0xFF7CDA54),
               ),
-
-              // Margenes especificas al encabezado de el menu 
               child: Transform.translate(
                 offset: const Offset(-8.0, 0.0),
                 child: Row(
@@ -47,8 +63,6 @@ class PageProfile extends StatelessWidget {
                 ),
               ),
             ),
-
-            // Lista de elementos del menu
             Column(
               children: <Widget>[
                 ListTile(
@@ -96,9 +110,7 @@ class PageProfile extends StatelessWidget {
           ],
         ),
       ),
-      
       backgroundColor: const Color.fromRGBO(255, 245, 222, 1),
-      // botón del menú
       body: Stack(
         children: [
           Positioned(
@@ -115,7 +127,7 @@ class PageProfile extends StatelessWidget {
           ),
           Center(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center, // Centra verticalmente los botones
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 RichText(
                   text: TextSpan(
@@ -124,29 +136,25 @@ class PageProfile extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       shadows: [
                         Shadow(
-                          color: Colors.grey.withOpacity(0.5), // Sombra
-                          blurRadius: 10.0, // Desenfoque de la sombra
-                          offset: const Offset(4.0, 4.0), // Desplazamiento de la sombra
+                          color: Colors.grey.withOpacity(0.5),
+                          blurRadius: 10.0,
+                          offset: const Offset(4.0, 4.0),
                         ),
                         const Shadow(
-                          color: Colors.grey, // Sombra adicional para el efecto lift
+                          color: Colors.grey,
                           blurRadius: 3.0,
                           offset: Offset(-2.0, -2.0),
                         ),
                       ],
                     ),
-                    children: const [
-                      TextSpan(
-                        text: 'HOLA ',
-                        style: TextStyle(
-                          color: Colors.black, // Color negro para "HOLA"
-                        ),
+                    children: [
+                      const TextSpan(
+                        text: 'Hola  ',
+                        style: TextStyle(color: Colors.black),
                       ),
                       TextSpan(
-                        text: 'ANA', // Texto en color personalizado
-                        style: TextStyle(
-                        color: Colors.redAccent, // Color para "ANA"
-                        ),
+                        text: userName, // Muestra el nombre de usuario
+                        style: TextStyle(color: Colors.redAccent),
                       ),
                     ],
                   ),
@@ -178,18 +186,18 @@ class PageProfile extends StatelessWidget {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(40.0),
             borderSide: const BorderSide(
-              color: Colors.grey, // Color del borde al estar enfocado
+              color: Colors.grey,
               width: 2.0,
             ),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(40.0),
             borderSide: const BorderSide(
-              color: Colors.white, // Color del borde cuando está habilitado
+              color: Colors.white,
               width: 2.0,
             ),
           ),
-          filled: true, // Rellenar el fondo
+          filled: true,
           fillColor: Colors.white,
           contentPadding: const EdgeInsets.all(20.0),
         ),

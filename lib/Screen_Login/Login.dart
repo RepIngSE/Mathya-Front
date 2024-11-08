@@ -4,6 +4,7 @@ import 'package:mathya/Screen_Register/Register.dart';
 import 'package:mathya/Screen_ForgotPassword/forgot_password_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Login extends StatefulWidget {
   @override
@@ -200,43 +201,92 @@ class _LoginState extends State<Login> {
     );
   }
 
-  // Función asincrona para conectar al back 
+  // Función asincrona para conectar al backend
   Future<void> _login() async {
+  setState(() {
+    _isLoading = true;
+  });
+
+  final String username = _usernameController.text.trim();
+  final String password = _passwordController.text.trim();
+
+  if (username.isEmpty || password.isEmpty) {
     setState(() {
-      _isLoading = true;
+      _isLoading = false;
     });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Por favor ingrese el correo y la contraseña')),
+    );
+    return;
+  }
 
-    // Traer los datos de los inputs 
-    final String username = _usernameController.text;
-    final String password = _passwordController.text;
+  final url = Uri.parse('https://mathya-back-2.onrender.com/login');
 
-    //Ruta de la api 
-    final url = Uri.parse('http://localhost:8090/login');
+  try {
     final response = await http.post(
       url,
       body: jsonEncode({'correo': username, 'password': password}),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
     );
 
-    // Esperar respuest de la base de datos
     setState(() {
       _isLoading = false;
     });
 
-    // Control de verificación 
     if (response.statusCode == 200) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => HomeScreen()),
-      );
+      var data = jsonDecode(response.body);
+
+      if (data is Map<String, dynamic> && data.containsKey("nombre")) {
+        // Caso cuando la respuesta es un mapa con el nombre
+        String nombreUsuario = data["nombre"];
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('nombreUsuario', nombreUsuario);
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => HomeScreen()),
+        );
+      } else if (data is List && data.isNotEmpty && data[0] is Map<String, dynamic>) {
+        // Caso cuando la respuesta es una lista de mapas
+        Map<String, dynamic> firstItem = data[0];
+        if (firstItem.containsKey("nombre")) {
+          String nombreUsuario = firstItem["nombre"];
+
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setString('nombreUsuario', nombreUsuario);
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => HomeScreen()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('El primer elemento de la lista no contiene el nombre')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Estructura de respuesta inesperada del servidor')),
+        );
+      }
     } else if (response.statusCode == 401) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Credenciales incorrectas')),
+        const SnackBar(content: Text('Credenciales incorrectas')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error en el servidor')),
+        const SnackBar(content: Text('Error en el servidor')),
       );
     }
+  } catch (e) {
+    setState(() {
+      _isLoading = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error: $e')),
+    );
   }
-}
+}}

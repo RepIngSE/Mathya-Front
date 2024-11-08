@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:mathya/Screen_Grades/Grades_pages.dart';
 import 'package:mathya/Screen_Login/Login.dart';
@@ -7,9 +8,15 @@ import 'package:mathya/Screen_Operation/home_page.dart';
 import 'package:mathya/Screen_Profile/profile_pages.dart';
 import 'package:mathya/Screen_PrivacyPolicy/Screen_PrivacyPolicy.dart';
 
+class HomeScreen extends StatefulWidget {
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
 
-// Pantalla principal de la aplicación
-class HomeScreen extends StatelessWidget {
+class _HomeScreenState extends State<HomeScreen> {
+  String userName = '';  // Variable para almacenar el nombre del usuario
+
+  // Lista de imágenes
   final List<String> images = [
     'assets/images/Suma.jpg',
     'assets/images/Resta.jpg',
@@ -17,7 +24,7 @@ class HomeScreen extends StatelessWidget {
     'assets/images/Division.jpg'
   ];
 
-  // Lista de operaciones 
+  // Lista de operaciones
   final List<String> operations = [
     'Suma',
     'Resta',
@@ -26,53 +33,55 @@ class HomeScreen extends StatelessWidget {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  // Función para cargar el nombre de usuario desde SharedPreferences
+  _loadUserName() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userName = prefs.getString('nombreUsuario') ?? '';  // Si no existe, se asigna una cadena vacía
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     double screenHeight = MediaQuery.of(context).size.height;
     double screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       backgroundColor: Color(0xFF7CDA54),
-
-      // Menú desplegable 
       drawer: Drawer(
         backgroundColor: Color(0xFFFFF5DE),
         child: ListView(
           padding: EdgeInsets.zero,
           children: <Widget>[
-
-            // Encabezado del menú
             DrawerHeader(
               decoration: const BoxDecoration(
                 color: Color(0xFF7CDA54),
               ),
-
-              // Margenes especificas al encabezado de el menu 
-              child: Transform.translate(
-                offset: const Offset(-8.0, 0.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.menu, color: Colors.black, size: 30),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.menu, color: Colors.black, size: 30),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Mathya',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 30,
                     ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Mathya',
-                      style: TextStyle(
-                        color: Color.fromARGB(255, 0, 0, 0),
-                        fontSize: 30,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-
-            // Lista de elementos del menu
             Column(
               children: <Widget>[
                 ListTile(
@@ -81,8 +90,8 @@ class HomeScreen extends StatelessWidget {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => PageProfile()), 
-                    ); 
+                      MaterialPageRoute(builder: (context) => PageProfile()),
+                    );
                   },
                 ),
                 ListTile(
@@ -91,8 +100,8 @@ class HomeScreen extends StatelessWidget {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => HomePage()), 
-                    ); 
+                      MaterialPageRoute(builder: (context) => HomePage()),
+                    );
                   },
                 ),
                 ListTile(
@@ -101,8 +110,8 @@ class HomeScreen extends StatelessWidget {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => PageGrades()), 
-                    ); 
+                      MaterialPageRoute(builder: (context) => PageGrades()),
+                    );
                   },
                 ),
                 ListTile(
@@ -111,21 +120,19 @@ class HomeScreen extends StatelessWidget {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => Login()), 
+                      MaterialPageRoute(builder: (context) => Login()),
                     );
-                  }
+                  },
                 ),
               ],
             ),
           ],
         ),
       ),
-
-      // Contenedor principal con la pantalla de carrusel
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Contenedor verde 
+            // Encabezado con el nombre de usuario y la imagen
             Container(
               height: screenHeight * 0.20,
               width: screenWidth,
@@ -133,11 +140,11 @@ class HomeScreen extends StatelessWidget {
                 color: Color(0xFF7CDA54),
               ),
               child: Stack(
-                alignment: Alignment.bottomRight, 
+                alignment: Alignment.bottomRight,
                 children: [
                   Positioned(
-                    bottom: 0, 
-                    right: 0, 
+                    bottom: 0,
+                    right: 0,
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
                       child: ClipRRect(
@@ -145,17 +152,15 @@ class HomeScreen extends StatelessWidget {
                         child: Image.asset(
                           'assets/images/Home2.png',
                           fit: BoxFit.cover,
-                          width: screenWidth * 0.6, 
-                          height: screenHeight * 0.18, 
+                          width: screenWidth * 0.6,
+                          height: screenHeight * 0.18,
                         ),
                       ),
                     ),
                   ),
-
-                  // botón del menú
                   Positioned(
-                    top: 15, 
-                    left: 10, 
+                    top: 15,
+                    left: 10,
                     child: Builder(
                       builder: (context) => IconButton(
                         icon: Icon(Icons.menu, color: Colors.black, size: 30),
@@ -169,7 +174,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
 
-            // Contenedor piel con redirecciones 
+            // Cuerpo principal con bienvenida y carrusel de operaciones
             Container(
               decoration: const BoxDecoration(
                 borderRadius: BorderRadius.only(
@@ -178,17 +183,17 @@ class HomeScreen extends StatelessWidget {
                 ),
                 color: Color(0xFFFFF5DE),
               ),
-              height: screenHeight * 0.85, 
+              height: screenHeight * 0.85,
               width: screenWidth,
               child: Padding(
-                padding: const EdgeInsets.all(20.0), 
+                padding: const EdgeInsets.all(20.0),
                 child: Column(
                   children: [
-                    const SizedBox(height: 30), 
-                    const Row(
+                    const SizedBox(height: 30),
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'hola ',
                           style: TextStyle(
                             fontSize: 30,
@@ -197,8 +202,8 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          'Ana',
-                          style: TextStyle(
+                          userName,  // Aquí mostramos el nombre del usuario
+                          style: const TextStyle(
                             fontSize: 30,
                             fontWeight: FontWeight.bold,
                             color: Colors.redAccent,
@@ -216,7 +221,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 60),
 
-                    // Carrusel de imágenes
+                    // Carrusel de imágenes de operaciones matemáticas
                     CarouselSlider(
                       options: CarouselOptions(
                         height: 200.0,
@@ -231,7 +236,6 @@ class HomeScreen extends StatelessWidget {
                         String image = entry.value;
                         return GestureDetector(
                           onTap: () {
-                            // Navegación a la pantalla de operación correspondiente
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -239,30 +243,23 @@ class HomeScreen extends StatelessWidget {
                               ),
                             );
                           },
-
-                          // Caracteristicas del carrusel de iamgenes 
-                          child: Builder(
-                            builder: (BuildContext context) {
-                              return Container(
-                                width: MediaQuery.of(context).size.width * 0.7,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
-                                  color: Colors.greenAccent,
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: Image.asset(image, fit: BoxFit.cover),
-                                ),
-                              );
-                            },
+                          child: Container(
+                            width: screenWidth * 0.7,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              color: Colors.greenAccent,
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: Image.asset(image, fit: BoxFit.cover),
+                            ),
                           ),
                         );
                       }).toList(),
                     ),
-                    
                     const SizedBox(height: 140),
 
-                    // Contenedor de botones de redes sociales
+                    // Botones de acción
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -290,39 +287,25 @@ class HomeScreen extends StatelessWidget {
                     ),
 
                     const SizedBox(height: 30),
-
-                    // Políticas de Privacidad
-                   // Políticas de Privacidad
                     Column(
                       children: [
                         const SizedBox(height: 10),
                         InkWell(
                           onTap: () {
-                            // Redirige a la página de Políticas de Privacidad
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                builder: (context) => const PrivacyPolicyPage(),
-                              ),
+                              MaterialPageRoute(builder: (context) => PrivacyPolicyPage()),
                             );
                           },
                           child: const Text(
-                            'Políticas de Privacidad',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            'Política de Privacidad',
+                            style: TextStyle(color: Colors.blue),
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        const Divider(
-                          thickness: 1,
-                          color: Colors.black,
-                          height: 20,
-                        ),
+                        const SizedBox(height: 5),
+                        const Text('2024 - Todos los derechos reservados.'),
                       ],
                     ),
-
                   ],
                 ),
               ),
