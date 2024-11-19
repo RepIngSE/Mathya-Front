@@ -23,7 +23,7 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       // Menú desplegable
       drawer: Drawer(
-        backgroundColor: Color(0xFFFFF5DE),
+        backgroundColor: const Color(0xFFFFF5DE),
         child: ListView(
           padding: EdgeInsets.zero,
           children: <Widget>[
@@ -32,12 +32,9 @@ class HomePage extends StatelessWidget {
               decoration: const BoxDecoration(
                 color: Color(0xFF7CDA54),
               ),
-              // Márgenes específicos al encabezado del menú 
               child: Transform.translate(
                 offset: const Offset(-8.0, 0.0),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     IconButton(
                       icon: const Icon(Icons.menu, color: Colors.black, size: 30),
@@ -49,7 +46,7 @@ class HomePage extends StatelessWidget {
                     const Text(
                       'Mathya',
                       style: TextStyle(
-                        color: Color.fromARGB(255, 0, 0, 0),
+                        color: Colors.black,
                         fontSize: 30,
                       ),
                     ),
@@ -62,44 +59,44 @@ class HomePage extends StatelessWidget {
             Column(
               children: <Widget>[
                 ListTile(
-                  leading: Icon(Icons.account_circle, color: Colors.black, size: 30),
-                  title: Text('Perfil'),
+                  leading: const Icon(Icons.account_circle, color: Colors.black, size: 30),
+                  title: const Text('Perfil'),
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => PageGrades()), 
-                    ); 
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.home, color: Colors.black, size: 30),
-                  title: Text('Inicio'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => HomeScreen()), 
-                    ); 
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.grade, color: Colors.black, size: 30),
-                  title: Text('Calificaciones'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => PageGrades()), 
-                    ); 
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.logout, color: Colors.black, size: 30),
-                  title: Text('Cerrar Sesión'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => Login()), 
+                      MaterialPageRoute(builder: (context) => PageGrades()),
                     );
-                  }
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.home, color: Colors.black, size: 30),
+                  title: const Text('Inicio'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => HomeScreen()),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.grade, color: Colors.black, size: 30),
+                  title: const Text('Calificaciones'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => PageGrades()),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.black, size: 30),
+                  title: const Text('Cerrar Sesión'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => Login()),
+                    );
+                  },
                 ),
               ],
             ),
@@ -107,15 +104,15 @@ class HomePage extends StatelessWidget {
         ),
       ),
       body: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF7ED957), // Color de fondo
+        decoration: const BoxDecoration(
+          color: Color(0xFF7ED957), // Color de fondo
         ),
-        child: Stack( // Usar Stack para superponer los widgets
+        child: Stack(
           children: [
             // Título grande
             Positioned(
-              top: 70, // Ajusta la posición vertical según lo necesites
-              left: 120, // Ajusta la posición horizontal para que no esté centrado
+              top: 70, 
+              left: 120,
               child: Text(
                 'Actividades',
                 style: TextStyle(
@@ -129,11 +126,11 @@ class HomePage extends StatelessWidget {
 
             // Botón del menú
             Positioned(
-              top: 15, 
-              left: 10, 
+              top: 15,
+              left: 10,
               child: Builder(
                 builder: (context) => IconButton(
-                  icon: Icon(Icons.menu, color: Colors.black, size: 30),
+                  icon: const Icon(Icons.menu, color: Colors.black, size: 30),
                   onPressed: () {
                     Scaffold.of(context).openDrawer();
                   },
@@ -143,7 +140,7 @@ class HomePage extends StatelessWidget {
 
             // Botones largos uno debajo del otro
             Positioned(
-              top: 200, // Ajusta la posición para que no se superponga con el título
+              top: 200,
               left: 0,
               right: 0,
               child: Padding(

@@ -194,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         const Text(
-                          'hola ',
+                          'Hola ',
                           style: TextStyle(
                             fontSize: 30,
                             fontWeight: FontWeight.bold,

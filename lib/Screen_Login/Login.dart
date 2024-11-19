@@ -238,12 +238,13 @@ class _LoginState extends State<Login> {
 
     if (response.statusCode == 200) {
       var data = jsonDecode(response.body);
-
       if (data is Map<String, dynamic> && data.containsKey("nombre")) {
         // Caso cuando la respuesta es un mapa con el nombre
         String nombreUsuario = data["nombre"];
+        int idUser = data["id_usuario"];
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('nombreUsuario', nombreUsuario);
+        await prefs.setInt('idUser', idUser);
 
         Navigator.push(
           context,
@@ -254,9 +255,10 @@ class _LoginState extends State<Login> {
         Map<String, dynamic> firstItem = data[0];
         if (firstItem.containsKey("nombre")) {
           String nombreUsuario = firstItem["nombre"];
-
+          int idUser = firstItem["id_usuario"];
           SharedPreferences prefs = await SharedPreferences.getInstance();
           await prefs.setString('nombreUsuario', nombreUsuario);
+          await prefs.setInt('idUser', idUser);
 
           Navigator.push(
             context,

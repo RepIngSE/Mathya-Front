@@ -1,19 +1,21 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import '../widgets_operation/multiple_choice_buttons.dart';
-import '../Screen_Grades/Grades_pages.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/question.dart';
+import '../services/question_service.dart';
+import '../Widgets_Operation/multiple_choice_buttons.dart';
 
 class OperationContent extends StatefulWidget {
-  final String title; // Título de la operación
-  final List<String> images; // Lista de imágenes
-  final String text; // Texto que se mostrará
-  final String questionTitle; // Título de la pregunta (espacio reservado)
+  final String title;
+  final String text;
+  final List<String> images;
 
   const OperationContent({
     Key? key,
     required this.title,
-    required this.images,
     required this.text,
-    required this.questionTitle, // Agregar la propiedad para el título de la pregunta
+    required this.images,
   }) : super(key: key);
 
   @override
@@ -21,302 +23,235 @@ class OperationContent extends StatefulWidget {
 }
 
 class _OperationContentState extends State<OperationContent> {
-  bool isFlipped = false; // Estado para saber si está volteado
-  int? selectedOption; // Almacena la opción seleccionada
-
-  void _toggleContent() {
-    setState(() {
-      isFlipped = !isFlipped; // Cambiar el estado al hacer clic
-    });
-  }
-
-  void _onOptionSelected(int index) {
-    setState(() {
-      selectedOption = index; // Guardar la opción seleccionada
-    });
-    print('Opción seleccionada: ${options[index]}'); // Imprime la opción seleccionada
-  }
-
-  // Lista de opciones para los botones
-  List<String> options = ['Opción 1', 'Opción 2', 'Opción 3', 'Opción 4'];
+  List<Question> questions = [];
+  int currentIndex = 0;
+  List<int?> selectedOptions = [];
+  bool isSubmitted = false;
+  int userId=0;
 
   @override
-  Widget build(BuildContext context) {
+  void initState() {
+    super.initState();
+    _fetchQuestions();
+    _getUserId();
+  }
+
+  // Método para obtener el ID del usuario desde SharedPreferences
+  Future<void> _getUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userId = prefs.getInt('idUser') ?? 0;
+    });
+  }
+
+  Future<void> _fetchQuestions() async {
+    try {
+      int moduleId = getModuleIdBasedOnTitle(widget.title);
+      List<Question> fetchedQuestions =
+          await QuestionService.fetchQuestions(moduleId);
+
+      // Seleccionar 5 preguntas al azar
+      questions = (fetchedQuestions.toList()..shuffle()).take(5).toList();
+
+      // Reordenar las opciones de cada pregunta
+      for (var question in questions) {
+        question.opciones.shuffle(); // Barajar las opciones de cada pregunta
+      }
+
+      // Inicializar la lista de respuestas seleccionadas
+      selectedOptions = List.filled(questions.length, null);
+
+      setState(() {}); // Refrescar el estado después de obtener las preguntas
+    } catch (e) {
+      print("Error fetching questions: $e");
+    }
+  }
+
+  int getModuleIdBasedOnTitle(String title) {
+    switch (title) {
+      case 'Suma':
+        return 1;
+      case 'Resta':
+        return 2;
+      case 'Multiplicación':
+        return 3;
+      case 'División':
+        return 4;
+      default:
+        return 0;
+    }
+  }
+
+  void _onOptionSelected(int index, int questionIndex) {
+    if (!isSubmitted) {
+      setState(() {
+        selectedOptions[questionIndex] = index;
+      });
+    }
+  }
+
+  Future<void> _submitAnswers() async {
+  setState(() {
+    isSubmitted = true; // Marcar como enviado
+  });
+
+  // Calcular el número de respuestas correctas
+  int correctAnswers = 0;
+  for (int i = 0; i < questions.length; i++) {
+    if (selectedOptions[i] != null &&
+        questions[i].opciones[selectedOptions[i]!] ==
+            questions[i].respuestaCorrecta) {
+      correctAnswers++;
+    }
+  }
+
+  // Calcular el puntaje
+  double puntaje = (correctAnswers / questions.length) * 100;
+
+  // Aquí puedes definir el ID del módulo
+  int idModulo = getModuleIdBasedOnTitle(widget.title);
+
+  // Guardar los resultados
+  await registrarResultado(userId, idModulo, correctAnswers, puntaje);
+
+  // Mostrar el diálogo de resultados
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Resultados del Test'),
+        content: Text(
+          'Respuestas correctas: $correctAnswers de ${questions.length} - Puntaje: ${puntaje.toStringAsFixed(2)}%',
+          style: const TextStyle(fontSize: 18),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: const Text('Aceptar'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+Future<void> registrarResultado(int idUsuario, int idModulo, int respuestasCorrectas, double puntaje) async {
+  final url = Uri.parse('https://mathya-back-2.onrender.com/resultados/');
+
+  // Crea el cuerpo de la solicitud
+  final body = json.encode({
+    'id_usuario': idUsuario,
+    'id_modulo': idModulo,
+    'id_pregunta': 1,
+    'puntaje': puntaje,
+  });
+
+  // Realiza la solicitud POST
+  try {
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: body,
+    );
+
+    if (response.statusCode == 201) {
+      print('Resultado guardado correctamente');
+    } else {
+      print('Error al guardar los resultados: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error de conexión: $e');
+  }
+}
+
+@override
+Widget build(BuildContext context) {
     var screenHeight = MediaQuery.of(context).size.height;
     var screenWidth = MediaQuery.of(context).size.width;
 
+    if (questions.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return SingleChildScrollView(
-      // Añadido para permitir desplazamiento
       child: Container(
-        // Contenedor para limitar el ancho
-        width: screenWidth, // Ancho completo
-        padding: EdgeInsets.all(16.0), // Espaciado
-        color: Color(0xFFFFF5DE), // Cambia el color de fondo aquí
-        child: Stack(
-          // Usamos un Stack para superponer el botón de cerrar
+        width: screenWidth,
+        padding: const EdgeInsets.all(16.0),
+        color: Color(0xFFFFF5DE), 
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.center, // Alinear al centro
-              children: [
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
-                  child: Text(
-                    widget.title,
-                    style: TextStyle(
-                      fontSize: screenHeight * 0.04,
-                      fontWeight: FontWeight.bold,
-                      color: const Color.fromARGB(255, 216, 106, 106),
-                    ),
-                  ),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+              child: Text(
+                widget.title,
+                style: TextStyle(
+                  fontSize: screenHeight * 0.04,
+                  fontWeight: FontWeight.bold,
+                  color: const Color.fromARGB(255, 0, 0, 0),
                 ),
-                GestureDetector(
-                  onTap: _toggleContent,
-                  child: Container(
-                    padding: const EdgeInsets.all(16.0),
-                    width: screenWidth * 0.8,
-                    height: screenHeight * 0.4,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 470),
-                      child: isFlipped
-                          ? Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  widget.text,
-                                  style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold),
-                                  textAlign: TextAlign.center,
-                                ),
-                                SizedBox(
-                                    height:
-                                        16), // Espacio entre el texto y la imagen
-                              ],
-                            )
-                          : Padding(
-                              padding: const EdgeInsets.only(top: 15.0),
-                              child: Image.network(
-                                widget.images[0],
-                                height: screenHeight * 0.30,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                    ),
-                  ),
-                ),
-                // Título y subtítulo fijos
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Actividad',
-                        style: TextStyle(
-                          fontSize: screenHeight * 0.035,
-                          fontWeight: FontWeight.bold,
-                          color: const Color.fromARGB(255, 0, 35, 150),
-                        ),
-                      ),
-                      Text(
-                        '(3 Ejercicios para responder)',
-                        style: TextStyle(
-                          fontSize: screenHeight * 0.025,
-                          color: Colors.grey,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-                // Título de la pregunta (espacio reservado) alineado a la izquierda
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
-                  child: Align(
-                    // Alineado a la izquierda
-                    alignment:
-                        Alignment.centerLeft, // Alineación a la izquierda
-                    child: Text(
-                      widget
-                          .questionTitle, // Aquí se muestra el título de la pregunta
-                      style: const TextStyle(
-                        fontSize: 21,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ),
-                // Aquí se agregan los botones de opción múltiple
-                MultipleChoiceButtons(
-                  options: options,
-                  onOptionSelected: _onOptionSelected,
-                  correctOptionIndex:
-                      1, // Cambia este valor al índice de la opción correcta
-                  selectedOptionIndex: selectedOption ??
-                      -1, // Si no hay selección, -1 (sin selección)
-                ),
-                SizedBox(height: screenHeight * 0.02), // Espacio inferior
-                Text(
-                  'Test',
-                  style: TextStyle(
-                    fontSize: screenHeight * 0.035,
-                    fontWeight: FontWeight.bold,
-                    color: const Color.fromARGB(255, 0, 35, 150),
-                  ),
-                ),
-                SingleChildScrollView(
-                  child: Container(
-                    padding: const EdgeInsets.only(
-                        top: 80.0,
-                        left: 16.0,
-                        right: 16.0,
-                        bottom: 16.0), // Espacio superior
-                    width: screenWidth * 0.8,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisAlignment:
-                          MainAxisAlignment.center, // Centrar verticalmente
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(top: 20.0),
-                          child: Text(
-                            """Ejercicio 1\n"""
-                            '''Juanito tiene 3 manzanas y su amigo Pedro le da 2 manzanas más. ¿Cuántas manzanas tiene Juanito ahora?''',
-                            style: TextStyle(
-                              fontSize: 18, // Tamaño del texto
-                              fontWeight: FontWeight.bold, // Estilo del texto
-                              color: Colors.black, // Color del texto
-                            ),
-                            textAlign: TextAlign.start, // Alineación del texto
-                          ),
-                        ),
-                        const SizedBox(
-                            height:
-                                30), // Espaciado entre el texto y los botones
-                        MultipleChoiceButtons(
-                          options: options,
-                          onOptionSelected: _onOptionSelected,
-                          correctOptionIndex: 1, // Índice de la opción correcta
-                          selectedOptionIndex: selectedOption ??
-                              -1, // Opción seleccionada o -1 si no hay
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.only(top: 20.0),
-                          child: Text(
-                            """Ejercicio 2\n"""
-                            '''María tiene 1 perro y su hermana le regala 3 perros más. ¿Cuántos perros tiene María en total?''',
-                            style: TextStyle(
-                              fontSize: 18, // Tamaño del texto
-                              fontWeight: FontWeight.bold, // Estilo del texto
-                              color: Colors.black, // Color del texto
-                            ),
-                            textAlign: TextAlign.start, // Alineación del texto
-                          ),
-                        ),
-                        const SizedBox(
-                            height:
-                                30), // Espaciado entre el texto y los botones
-                        MultipleChoiceButtons(
-                          options: options,
-                          onOptionSelected: _onOptionSelected,
-                          correctOptionIndex: 1, // Índice de la opción correcta
-                          selectedOptionIndex: selectedOption ??
-                              -1, // Opción seleccionada o -1 si no hay
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.only(
-                              top:
-                                  20.0), // Cambia 16.0 por el valor que necesites
-                          child: Text(
-                            """Ejercicio 3\n"""
-                            '''En un parque, hay 7 patos en un estanque. Luego, llegan 2 patos más. ¿Cuántos patos hay en total en el estanque?''',
-                            style: TextStyle(
-                              fontSize: 18, // Tamaño del texto
-                              fontWeight: FontWeight.bold, // Estilo del texto
-                              color: Colors.black, // Color del texto
-                            ),
-                            textAlign: TextAlign.start, // Alineación del texto
-                          ),
-                        ),
-                        const SizedBox(
-                            height:
-                                30), // Espaciado entre el texto y los botones
-                        MultipleChoiceButtons(
-                          options: options,
-                          onOptionSelected: _onOptionSelected,
-                          correctOptionIndex: 1, // Índice de la opción correcta
-                          selectedOptionIndex: selectedOption ??
-                              -1, // Opción seleccionada o -1 si no hay
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 30.0,
-                    vertical: 30.0,
-                  ), //Espaciado
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => PageGrades(titulo: widget.title),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green, // Color de fondo
-                      shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(20.0), // Bordes redondeados
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 40, vertical: 20), // Espaciado
-                      textStyle:
-                          const TextStyle(fontSize: 20), // Tamaño del texto
-                    ),
-                    child: const Text('Enviar'),
-                  ),
-                ),
-              ],
+              ),
             ),
-            // Botón de cerrar (X) fijado en la parte superior derecha
-            Positioned(
-              top: 10, // Ajusta según sea necesario
-              left: 10, // Ajusta según sea necesario
-              child: IconButton(
-                icon: const Icon(Icons.close,
-                    color: const Color.fromARGB(255, 0, 0, 0),
-                    size: 23), // Icono de cerrar
-                onPressed: () {
-                  Navigator.of(context).pop(); // Cerrar la ventana
-                },
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: questions.length,
+              itemBuilder: (context, index) {
+                final question = questions[index];
+                return Card(
+                  color: Color(0xFF7ED957),
+                  margin: const EdgeInsets.symmetric(vertical: 10),
+                  elevation: 5,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          question.pregunta,
+                          style: TextStyle(
+                            fontSize: screenHeight * 0.025,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        MultipleChoiceButtons(
+                          options: question.opciones,
+                          onOptionSelected: (selectedIndex) {
+                            _onOptionSelected(selectedIndex, index);
+                          },
+                          selectedOptionIndex: selectedOptions[index] ?? -1,
+                          correctOptionIndex: question.opciones
+                              .indexOf(question.respuestaCorrecta),
+                          isSubmitted: isSubmitted,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+            Center(
+              child: ElevatedButton(
+                onPressed: isSubmitted ? null : _submitAnswers,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF7ED957),
+                  foregroundColor: Color.fromARGB(255, 255, 255, 255),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                ),
+                child: const Text(
+                  'Enviar Respuestas',
+                  style: TextStyle(fontSize: 18),
+                ),
               ),
             ),
           ],

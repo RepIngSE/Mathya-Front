@@ -1,14 +1,17 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:mathya/Screen_Home/home.dart';
 import 'package:mathya/Screen_Login/Login.dart';
 import 'package:mathya/Screen_Operation/home_page.dart';
 import 'package:mathya/Screen_Profile/profile_pages.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PageGrades extends StatefulWidget {
-  //static final GlobalKey<_PageGrade> gradesKey = GlobalKey<_PageGrade>();
+
   final String titulo;
-  //const PageGrades({Key? key}) : super(key: key);
-  //PageGrades({super.key});
+
   PageGrades({this.titulo = ''});
 
   @override
@@ -17,58 +20,131 @@ class PageGrades extends StatefulWidget {
 
 
 class _PageGrade extends State<PageGrades> {
-  final int totalThemes = 4; // Total de temas
-  final int modulesPerTheme = 4; // Módulos por tema // Total de módulos
-  int completedModulSuma = 0; // Módul suma completados
-  int completedModulResta = 0; // Módul resta completados
-  int completedModulDivision = 0; // Módul division completados
-  int completedModulMulti = 0; // Módul multiplicacion completados
+  int userId = 0;
+  final int maxEvaluaciones = 1;
+  int completedModulSuma = 0;
+  int completedModulResta = 0;
+  int completedModulMulti = 0;
+  int completedModulDivision = 0;
   double progress = 0.0;
+
+  // Variables para almacenar las evaluaciones realizadas
+  int evaluationsSuma = 0;
+  int evaluationsResta = 0;
+  int evaluationsMultiplicacion = 0;
+  int evaluationsDivision = 0;
+
+  int sumaCount = 0;
+  int restaCount = 0;
+  int multiCount = 0;
+  int divisionCount = 0;
+
   void  initState(){
     super.initState();
-    _updateProgress();
+    //_updateProgress();
+    _fetchResults();
   }
 
-  void _updateProgress() {
-    // Aquí se implementa la lógica para actualizar el progreso según el avance del usuario
-    // Por ejemplo, puedes llamar a este método cada vez que el usuario complete una parte de la evaluación
-    if (widget.titulo == 'Suma'){
-      setState(() {
-        if (completedModulSuma < modulesPerTheme) {
-          completedModulSuma++; // Incrementar módulos completados
-          progress = completedModulSuma / (totalThemes * modulesPerTheme); // Calcular progreso
-        }
-        // Aumentar el progreso por un 10% por cada evaluación completada
-      });
-    }
-    if (widget.titulo == 'Resta'){
-      setState(() {
-        if (completedModulResta < modulesPerTheme) {
-          completedModulResta++; // Incrementar módulos completados
-          progress = completedModulResta / (totalThemes * modulesPerTheme); // Calcular progreso
-        }
-        // Aumentar el progreso por un 10% por cada evaluación completada
-      });
-    }
-    if (widget.titulo == 'División'){
-      setState(() {
-        if (completedModulDivision < modulesPerTheme) {
-          completedModulDivision++; // Incrementar módulos completados
-          progress = completedModulDivision / (totalThemes * modulesPerTheme); // Calcular progreso
-        }
-        // Aumentar el progreso por un 10% por cada evaluación completada
-      });
-    }
-    if (widget.titulo == 'Multiplicación'){
-      setState(() {
-        if (completedModulMulti < modulesPerTheme) {
-          completedModulMulti++; // Incrementar módulos completados
-          progress = completedModulMulti / (totalThemes * modulesPerTheme); // Calcular progreso
-        }
-        // Aumentar el progreso por un 10% por cada evaluación completada
-      });
+   // Función para obtener los resultados desde la API
+  Future<void> _fetchResults() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() { 
+      userId = prefs.getInt('idUser') ?? 0;  // Recupera el ID del usuario de SharedPreferences
+    }); // ID del usuario
+    
+    final response = await http.get(Uri.parse('https://mathya-back-2.onrender.com/resultados/usuarios/$userId'));
+
+    if (response.statusCode == 200) {
+      List<dynamic> results = json.decode(response.body);
+      _processResults(results);
+    } else {
+      print("Error al obtener los resultados");
     }
   }
+
+
+  // Procesar los resultados obtenidos
+  void _processResults(List<dynamic> results) {
+    
+
+    for (var result in results) {
+      int puntaje = result['puntaje'];
+      int idModulo = result['id_modulo'];
+
+      if (puntaje >= 80) {
+        // Aumentamos el contador solo si el puntaje es 80 o mayor
+        if (idModulo == 1) sumaCount++; // Suma
+        if (idModulo == 2) restaCount++; // Resta
+        if (idModulo == 3) multiCount++; // Multiplicación
+        if (idModulo == 4) divisionCount++; // División
+      }
+    }
+
+    setState(() {
+      if (sumaCount >= 1 ){
+        completedModulSuma = 1;
+      }
+      if (restaCount >= 1 ){
+        completedModulResta = 1;
+      }
+      if (multiCount >= 1 ){
+        completedModulMulti = 1;
+      }
+      if (divisionCount >= 1 ){
+        completedModulDivision = 1;
+      }
+
+
+      evaluationsSuma = results.where((r) => r['id_modulo'] == 1).length;
+      evaluationsResta = results.where((r) => r['id_modulo'] == 2).length;
+      evaluationsMultiplicacion = results.where((r) => r['id_modulo'] == 3).length;
+      evaluationsDivision = results.where((r) => r['id_modulo'] == 4).length;
+
+      progress = _calculateProgress();
+    });
+  }
+
+  // Calcular el progreso total
+  double _calculateProgress() {
+    int totalAprobadas = completedModulSuma + completedModulResta + completedModulMulti + completedModulDivision;
+    return totalAprobadas / (maxEvaluaciones * 4); // maxEvaluaciones es 4 y hay 4 módulos
+  }
+
+  // Función para mostrar los resultados de cada operación
+  Widget inputs(String operation, int valor, int evaluaciones) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double screenWidth = MediaQuery.of(context).size.width;
+        double buttonWidth = screenWidth * 0.8;
+
+        return Center(
+          child: Container(
+            width: buttonWidth,
+            padding: const EdgeInsets.all(10.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: const Color.fromARGB(255, 255, 255, 255)),
+              borderRadius: BorderRadius.circular(40.0),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  operation,
+                  style: const TextStyle(fontSize: 20),
+                ),
+                Text(
+                  '$valor',
+                  style: const TextStyle(fontSize: 20),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  } 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -166,8 +242,8 @@ class _PageGrade extends State<PageGrades> {
         children: [
           // Título grande
           Positioned(
-            top: 80, // Ajusta la posición vertical según lo necesites
-            left: 130, // Ajusta la posición horizontal para que no esté centrado
+            top: 80, 
+            left: 130,
             child: Text(
               'Matemáticas',
               style: TextStyle(
@@ -232,14 +308,14 @@ class _PageGrade extends State<PageGrades> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        inputs('Suma', completedModulSuma),
+                        inputs('Suma', sumaCount, evaluationsSuma),
                         const SizedBox(height: 15),
-                        inputs('Resta', completedModulResta),
+                        inputs('Resta', restaCount, evaluationsResta),
                         const SizedBox(height: 15),
-                        inputs('Multiplicación', completedModulMulti),
+                        inputs('Multiplicación', multiCount, evaluationsMultiplicacion),
                         const SizedBox(height: 15),
-                        inputs('División', completedModulDivision),
-                        
+                        inputs('División', divisionCount, evaluationsDivision),
+                                
                       ],
                     ),
                   ),
@@ -252,44 +328,4 @@ class _PageGrade extends State<PageGrades> {
     );
   }
 
-  Widget inputs(String operation, int valor) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Usamos MediaQuery para obtener el ancho de la pantalla
-        double screenWidth = MediaQuery.of(context).size.width;
-        
-        // Ajusta el ancho del botón a un porcentaje del ancho de la pantalla
-        double buttonWidth = screenWidth * 0.8; 
-
-        return Center(
-          child: Container(
-            width: buttonWidth,
-            padding: const EdgeInsets.all(10.0),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: const Color.fromARGB(255, 255, 255, 255)),
-              borderRadius: BorderRadius.circular(40.0),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  operation, // Nombre de la operación
-                  style: const TextStyle(
-                    fontSize: 20,
-                  ),
-                ),
-                Text(
-                  '$valor/4',
-                  style: const TextStyle(
-                    fontSize: 20,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 }

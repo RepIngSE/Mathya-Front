@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'Screen_Login/login.dart'; 
+import 'Screen_Login/login.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,11 +12,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       // Elimina el banner de depuración
-      debugShowCheckedModeBanner: false, 
+      debugShowCheckedModeBanner: false,
 
       // LoginPage será la pantalla principal al iniciar la app
-
-      home: Login(), 
+      home: Login(),
     );
   }
 }
